@@ -1,6 +1,20 @@
 ;; Functions that test the rendering engine
 (in-package :clx-freetype2-renderer)
 (export '(render-test))
+(defun constituent(c)
+  (and (graphic-char-p c)
+       (not (char= c #\space))))
+
+(defun white-space-split (string)
+  (when (plusp (length string))
+    (let ((cut-point (position-if
+		      (complement #'constituent)
+		      string)))
+      (if cut-point
+	  (cons (subseq string 0 cut-point)
+		(white-space-split
+		 (subseq string (1+ cut-point))))
+	(list string)))))
 
 (defun handle-expose-event (count window gcontext face)
   (when (zerop count)
@@ -12,8 +26,7 @@
 	   (pixmap (xlib:create-pixmap :width width
 				       :height height
 				       :depth (xlib:drawable-depth window)
-				       :drawable window))
-	   )
+				       :drawable window)))
       (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext))
 	(xlib:draw-rectangle pixmap gcontext 0 0 
 			     width height 'fill))
