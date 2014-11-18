@@ -6,19 +6,21 @@
   (when (zerop count)
     (let* ((width (xlib:drawable-width window))
 	   (height (xlib:drawable-height window))
-	   (x 20)
-	   (y 50)
+	   (x (round (/ width 2)))
+	   (y (round (/ height 2)))
+	   (gc-color (xlib:gcontext-foreground gcontext))
 	   (pixmap (xlib:create-pixmap :width width
 				       :height height
 				       :depth (xlib:drawable-depth window)
 				       :drawable window))
-	   (gc-color (xlib:gcontext-foreground gcontext)))
+	   )
       (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext))
 	(xlib:draw-rectangle pixmap gcontext 0 0 
 			     width height 'fill))
-      ;(ft2:print-with-face face "Hello" :left-right)
-      (draw-glyphs window gcontext 20 50 "Hello" :face face)
-      (xlib:copy-area pixmap gcontext 0 0 width height window 0 0)))
+      (draw-glyphs pixmap gcontext x y "Hello World" :face face)
+      
+      (xlib:copy-area pixmap gcontext 0 0 width height window 0 0)
+      ))
   nil)
 
 (defun render-test (&optional (host ""))
@@ -41,9 +43,8 @@
 						    :structure-notify)))
 	 (width nil)
 	 (height nil))
-    ;(describe (xlib:gcontext-font gcontext))
     ;; setup the font
-    (set-face-size *face* 24 screen)
+    (set-face-size *face* 10 screen)
     (xlib:map-window window)
     (xlib:event-case (display :force-output-p t
 			      :discard-p t)
