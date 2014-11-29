@@ -47,8 +47,9 @@
       (setf (slot-value this-font 'style) (find-default-style this-family)))
     (check-valid-font-families (slot-value this-font 'family)
 			       (slot-value this-font 'style)))
-  (with-slots (family style ft-face) this-font
-    (setf ft-face (ft2:new-face (get-font-pathname family style)))))
+  (with-slots (family style ft-face size) this-font
+    (setf ft-face (ft2:new-face (get-font-pathname family style)))
+    (ft2:set-char-size ft-face (* size 64) 0 72 72)))
 (defun find-default-style (family)
   "Tries to pick a reasonable style"
   (let ((styles (get-font-styles family)))

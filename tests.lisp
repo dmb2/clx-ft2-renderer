@@ -30,13 +30,14 @@
 	  (setf x left-margin)) 
 	(draw-glyphs drawable gcontext x (* line line-spacing) word :face face)
 	(incf x (+ width inter-word-space))))))
-(defun handle-expose-event (count window gcontext face words)
+(defun handle-expose-event (count window gcontext font words)
   (when (zerop count)
     (let* ((width (xlib:drawable-width window))
 	   (height (xlib:drawable-height window))
 	   (x (round (/ width 2)))
 	   (y (round (/ height 2)))
 	   (gc-color (xlib:gcontext-foreground gcontext))
+	   (face (slot-value font 'ft-face))
 	   (pixmap (xlib:create-pixmap :width width
 				       :height height
 				       :depth (xlib:drawable-depth window)
@@ -55,6 +56,7 @@
 	 (black (xlib:screen-black-pixel screen))
 	 (white (xlib:screen-white-pixel screen))
 	 (root-window (xlib:screen-root screen))
+	 (font (make-instance 'font :family "DejaVu Sans" :style "Oblique"))
 	 (gcontext (xlib:create-gcontext
 		    :drawable root-window
 		    :foreground white
@@ -71,13 +73,13 @@
 	 (width nil)
 	 (height nil))
     ;; setup the font
-    (set-face-size *face* 14 screen)
+    ;(set-face-size font screen 14)
     (xlib:map-window window)
     (xlib:event-case (display :force-output-p t
 			      :discard-p t)
       (:configure-notify (w-w w-h) (setf width w-w
 					 height w-h) nil)
-      (:exposure (count) (handle-expose-event count window gcontext *face* words))
+      (:exposure (count) (handle-expose-event count window gcontext font words))
       (:button-press () t)
       (:destroy-notify () t))
     (xlib:destroy-window window)

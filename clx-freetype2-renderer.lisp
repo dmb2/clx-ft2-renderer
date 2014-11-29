@@ -5,10 +5,6 @@
 ;;; "clx-freetype2-renderer" goes here. Hacks and glory await!
 (defparameter *face* (ft2:new-face "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf")
   "Font for the tests.")
-(defun set-face-size (face size screen)
-  (multiple-value-bind (dpi-x dpi-y)
-	(screen-dpi screen)
-    (ft2:set-char-size face (* size 64) 0 dpi-x dpi-y)))
 ;; Taken from clx-truetype.lisp
 (defun screen-dpi (screen)
   "Returns dpi for @var{screen}. ((pixel width)/(mm width))*25.4 mm/inch"
@@ -16,6 +12,13 @@
 		 (xlib:screen-width-in-millimeters screen))
 	  (floor (* (xlib:screen-height screen) 25.4)
 		 (xlib:screen-height-in-millimeters screen))))
+
+(defun set-face-size (font screen &optional size)
+  (multiple-value-bind (dpi-x dpi-y)
+	(screen-dpi screen)
+    (with-slots (face-size ft-face) font
+      (ft2:set-char-size ft-face (* (or size face-size) 64) 0 dpi-x dpi-y))))
+
 (defun get-drawable-picture (drawable)
   (or (getf (xlib:drawable-plist drawable) :ft2-surface)
       (setf (getf (xlib:drawable-plist drawable) :ft2-surface)
