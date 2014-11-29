@@ -31,8 +31,13 @@
     :accessor font-overline 
     :documentation "Draw line over text string.")
    (ft-face :type freetype2-types:ft-face
+	    :accessor font-face
 	    :initform nil
 	    :documentation "Internal reference to the freetype2 face")
+   (char->glyph-info 
+    :type hash-table
+    :initform (make-hash-table :size 256)
+    :documentation "Cache for glyph info")
    ;; (string-alpha-maps 
    ;;  :type hash-table 
    ;;  :initform (make-hash-table :test 'equal) 
@@ -40,16 +45,7 @@
    ;;  :documentation "Cache for text alpha maps")
    )
   (:documentation "Class for representing font information."))
-(defmethod initialize-instance :after ((this-font font) &key)
-  (let ((this-style (slot-value this-font 'style))
-	(this-family (slot-value this-font 'family)))
-    (unless this-style
-      (setf (slot-value this-font 'style) (find-default-style this-family)))
-    (check-valid-font-families (slot-value this-font 'family)
-			       (slot-value this-font 'style)))
-  (with-slots (family style ft-face size) this-font
-    (setf ft-face (ft2:new-face (get-font-pathname family style)))
-    (ft2:set-char-size ft-face (* size 64) 0 72 72)))
+
 (defun find-default-style (family)
   "Tries to pick a reasonable style"
   (let ((styles (get-font-styles family)))
@@ -88,11 +84,14 @@
 (defmethod (setf font-style) :after
   (style (font font)))
 
-(defmethod (setf font-size) :after (value (font font)))
+(defmethod (setf font-size) :after (value (font font))
+  (set-face-size font (first (xlib:display-roots (xlib:open-display ""))) value))
 
 (defmethod (setf font-underline) :after (value (font font)))
 
 (defmethod (setf font-overline) :after (value (font font)))
+
+(defmethod (setf font-face) :after (value (font font)))
 
 (defgeneric font-equal (font1 font2)
   (:documentation "Returns t if two font objects are equal, else returns nil.")

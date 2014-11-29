@@ -15,9 +15,10 @@
 		(white-space-split
 		 (subseq string (1+ cut-point))))
 	(list string)))))
-(defun draw-words (drawable gcontext words face)
+(defun draw-words (drawable gcontext words font)
   (let* ((right-margin 10)
 	 (left-margin 10)
+	 (face (slot-value font 'ft-face))
 	 (line-spacing (+ 3 (round (ft2:face-ascender-pixels face))))
 	 (inter-word-space (round (ft2:string-pixel-width face " ")))
 	 (actual-width (xlib:drawable-width drawable))
@@ -28,7 +29,7 @@
 	(when (> (+ x width right-margin) actual-width)
 	  (incf line) 
 	  (setf x left-margin)) 
-	(draw-glyphs drawable gcontext x (* line line-spacing) word :face face)
+	(draw-glyphs drawable gcontext x (* line line-spacing) word :font font)
 	(incf x (+ width inter-word-space))))))
 (defun handle-expose-event (count window gcontext font words)
   (when (zerop count)
@@ -37,7 +38,6 @@
 	   (x (round (/ width 2)))
 	   (y (round (/ height 2)))
 	   (gc-color (xlib:gcontext-foreground gcontext))
-	   (face (slot-value font 'ft-face))
 	   (pixmap (xlib:create-pixmap :width width
 				       :height height
 				       :depth (xlib:drawable-depth window)
@@ -45,7 +45,7 @@
       (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext))
 	(xlib:draw-rectangle pixmap gcontext 0 0 
 			     width height 'fill))
-      (draw-words pixmap gcontext words face)
+      (draw-words pixmap gcontext words font)
       (xlib:copy-area pixmap gcontext 0 0 width height window 0 0)
       ))
   nil)

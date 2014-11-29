@@ -1,7 +1,47 @@
 ;; The main rendering engine
+
 (in-package :clx-freetype2-renderer)
 (export '(draw-glyphs))
+(declaim (optimize (speed 1) (safety 3) (debug 1) (space 0)))
+;; (defmacro xlib-lazy-update (xlib-expr symbol ) 
+;;   `(or (getf ,xlib-expr 'symbol)
+;;        (setf (getf ,xlib-expr 'symbol)
+;; 	     @body)))
+(defparameter *ft2-face-cache* (make-hash-table :test 'equal :size 256)
+  "Cache of FreeType2 bitmaps and size info")
+(defun cache-char (face char vertical-p cache)
+  (or (gethash char *ft2-face-cache*)
+      (setf (gethash char *ft2-face-cache*) 
+	    (render-char face char vertical-p))))
+(defun render-char (face char vertical-p)
+  (multiple-value-bind (bitmap advance top left)
+      (ft2:default-load-render face char vertical-p)
+    (vector bitmap advance top left)))
 
+(defmethod initialize-instance :after ((this-font font) &key)
+  (let ((this-style (slot-value this-font 'style))
+	 (this-family (slot-value this-font 'family)))
+    (unless this-style
+      (setf (slot-value this-font 'style) (find-default-style this-family)))
+    (check-valid-font-families (slot-value this-font 'family)
+			       (slot-value this-font 'style)))
+  (let* ((display (xlib:open-display ""))
+	(screen (first (xlib:display-roots display))))
+    (with-slots (family style ft-face size) this-font
+    (setf ft-face (ft2:new-face (get-font-pathname family style)))
+    (multiple-value-bind (dpi-x dpi-y) (screen-dpi screen)
+      (ft2:set-char-size ft-face (* size 64) 0 dpi-x dpi-y))
+    (loop for i from 37 to 255
+       do (cache-char ft-face (code-char i) nil *ft2-face-cache*)))))
+
+(defun load-render (face char vertical-p)
+  (ft2:load-char face char (if vertical-p '(:vertical-layout) '(:default)))
+  (let ((char-list (cache-char face char vertical-p *ft2-face-cache*)))
+    (when char-list
+      (values (aref char-list 0)
+	      (aref char-list 1)
+	      (aref char-list 2)
+	      (aref char-list 3)))))
 
 (defun print-alpha-data (array)
   (loop for i from 0 below (array-dimension array 0)
@@ -46,7 +86,8 @@
          (array (make-array (list height width) :element-type '(unsigned-byte 8)
                                                 :initial-element 0)))
     (ft2:do-string-render (face string bitmap x y
-                       :direction direction)
+				:direction direction 
+				:load-function 'load-render)
       (let ((barray (ft2:bitmap-to-array bitmap)))
         (case direction
           (:left-right (ablit array barray :x x :y y))
@@ -58,9 +99,10 @@
   (round (ft2:string-pixel-width face string)))
 (defun text-height (face string)
   (round (ft2:string-pixel-height face string)))
-(defun render-glyphs (drawable gcontext x y string face update-bg-p)
+(defun render-glyphs (drawable gcontext x y string font update-bg-p)
   "Actually handle the rendering"
   (let* ((display (xlib:drawable-display drawable))
+	 (face (slot-value font 'ft-face))
 	 (width (text-width face string))
 	 (height (text-height face string))
 	 (alpha-data (string-to-array face string :left-right width height))
@@ -90,10 +132,10 @@
 			   x-pos y-pos  width height))
   nil)
 
-(defun draw-glyphs (drawable gcontext x y string &key (start 0) end face update-bg-p)
+(defun draw-glyphs (drawable gcontext x y string &key (start 0) end font update-bg-p)
   "Draw glyphs to gcontext depending on whether or not face was provided"
-  (if face
+  (if font
       (render-glyphs drawable gcontext x y (if (and start end (not (>= start end)))
 					       (subseq string start end)
-					       string) face update-bg-p)
+					       string) font update-bg-p)
       (xlib:draw-glyphs drawable gcontext x y string :start start :end end)))

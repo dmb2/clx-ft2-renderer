@@ -15,7 +15,7 @@
   :components ((:file "package")
 	       (:file "font-cache")
 	       (:file "font")
-               (:file "clx-freetype2-renderer")
 	       (:file "render")
+               (:file "clx-freetype2-renderer")
 	       (:file "tests")))
 
