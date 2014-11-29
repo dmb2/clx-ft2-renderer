@@ -1,14 +1,16 @@
 
 (in-package #:clx-freetype2-renderer)
 
+(export '(*font-cache*))
+
 (defvar *font-dirs* #+(or unix netbsd openbsd freebsd) (list "/usr/share/fonts/"
                                      (namestring (merge-pathnames ".fonts/" (user-homedir-pathname))))
         "List of directories, which contain Freetype2 fonts.")
 
 ;; family ->
-;;   subfamily -> filename
-;;   subfamily -> filename
-;;(defparameter *font-cache* (make-hash-table :test 'equal))
+;;   style -> filename
+;;   style -> filename
+(defparameter *font-cache* (make-hash-table :test 'equal))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter +font-cache-filename+ 
     #.(merge-pathnames "ft2-font-cache.sexp"
@@ -19,7 +21,7 @@
     (if (fad:file-exists-p +font-cache-filename+)
         (cl-store:restore +font-cache-filename+)
         (make-hash-table :test 'equal))
-    "Hashmap for caching font families, subfamilies and files."))
+    "Hashmap for caching font families, styles and files."))
 
 
 (defun cache-font-file (pathname)
@@ -60,17 +62,17 @@
                (push key result)) *font-cache*)
     (nreverse result)))
 
-(defun get-font-subfamilies (font-family)
-  "Returns font subfamilies for current @var{font-family}. For e.g. regular, italic, bold, etc."
+(defun get-font-styles (font-family)
+  "Returns font styles for current @var{font-family}. For e.g. regular, italic, bold, etc."
   (declare (special *font-cache*))
   (let ((result (list)))
     (maphash (lambda (family value)
                (declare (ignorable family))
                (when (string-equal font-family family)
-                 (maphash (lambda (subfamily pathname)
+                 (maphash (lambda (style pathname)
                             (declare (ignorable pathname))
-                            (push subfamily result)) value)
-                 (return-from get-font-subfamilies 
+                            (push style result)) value)
+                 (return-from get-font-styles 
                    (nreverse result)))) *font-cache*)
     (nreverse result)))
 
