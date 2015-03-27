@@ -1,7 +1,10 @@
 
 (in-package #:clx-freetype2-renderer)
 
-(export '(*font-cache*))
+(export '(*font-cache*
+	  cache-fonts
+	  get-font-styles
+	  get-font-families))
 
 (defvar *font-dirs* #+(or unix netbsd openbsd freebsd) (list "/usr/share/fonts/"
                                      (namestring (merge-pathnames ".fonts/" (user-homedir-pathname))))

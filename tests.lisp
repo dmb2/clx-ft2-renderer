@@ -56,7 +56,7 @@
 	 (black (xlib:screen-black-pixel screen))
 	 (white (xlib:screen-white-pixel screen))
 	 (root-window (xlib:screen-root screen))
-	 (font (make-instance 'font :family "DejaVu Sans" :style "Oblique"))
+	 (font (make-instance 'font :family "DejaVu Sans" :size 14))
 	 (gcontext (xlib:create-gcontext
 		    :drawable root-window
 		    :foreground white

@@ -1,7 +1,8 @@
 ;; The main rendering engine
 
 (in-package :clx-freetype2-renderer)
-(export '(draw-glyphs))
+(export '(draw-glyphs
+	  text-width))
 (declaim (optimize (speed 1) (safety 3) (debug 1) (space 0)))
 ;; (defmacro xlib-lazy-update (xlib-expr symbol ) 
 ;;   `(or (getf ,xlib-expr 'symbol)
@@ -16,7 +17,50 @@
 (defun render-char (face char vertical-p)
   (multiple-value-bind (bitmap advance top left)
       (ft2:default-load-render face char vertical-p)
-    (vector bitmap advance top left)))
+    (vector (bitmap-to-cffi-array bitmap) advance top left)));(ft2:bitmap-to-array bitmap)
+
+;; TODO should probably import these funs from cl-freetype2
+(defun nth-mono-pixel (row n)
+  (multiple-value-bind (q offset) (truncate n 8)
+    (let ((byte (cffi-sys:%mem-ref row :unsigned-char q)))
+    (if (logbitp (- 7 offset) byte) 1 0))))
+
+(defun nth-gray-pixel (row n)
+  (cffi-sys:%mem-ref row :unsigned-char n))
+
+(defun bitmap-to-cffi-array (bitmap)
+  "=> ARRAY
+
+Convert `BITMAP` from internal `FT_Bitmap`'s internal representation to
+a native array.  This is specified for a `FT-BITMAP-PIXEL-FORMAT` of `:MONO`,
+`:GRAY`, `:LCD`, and `:LCD-V`.
+
+Note that for :LCD and :LCD-V, the result is a either 3\\*width or
+3\\*height, respectively.  This may change in the future."
+  (let ((buffer (ft2::ft-bitmap-buffer bitmap))
+        (rows (ft2::ft-bitmap-rows bitmap))
+        (width (ft2::ft-bitmap-width bitmap))
+        (pitch (ft2::ft-bitmap-pitch bitmap))
+        (format (ft2::ft-bitmap-pixel-mode bitmap)))
+    (let ((pixel-fn (ecase format
+                      (:mono #'nth-mono-pixel)
+                      (:gray #'nth-gray-pixel)
+                      (:lcd #'nth-gray-pixel)
+                      (:lcd-v #'nth-gray-pixel)))
+          (array (cffi:foreign-alloc :pointer 
+				     :count rows 
+				     :initial-element
+				     (cffi:foreign-alloc :uint8 :count width))))
+      (declare (function pixel-fn))
+      #+-(format t "buffer: ~A rows: ~A width: ~A pitch: ~A format: ~A~%"
+                 buffer rows width pitch format)
+      (loop for i from 0 below rows
+	 as ptr = (cffi-sys:inc-pointer buffer (* i pitch))
+	 do (loop for j from 0 below width
+	       do (cffi-sys:%mem-set (funcall pixel-fn ptr j) (cffi-sys:inc-pointer array (+ i j)) :unsigned-char)
+		 #+-(format t "~a " (cffi-sys:%mem-ref (cffi-sys:inc-pointer array (+ i j)) :unsigned-char))
+		 ) #+-(format t "~%")
+      	 finally (return (values array format))))))
 
 (defmethod initialize-instance :after ((this-font font) &key)
   (let ((this-style (slot-value this-font 'style))
@@ -86,8 +130,8 @@
          (array (make-array (list height width) :element-type '(unsigned-byte 8)
                                                 :initial-element 0)))
     (ft2:do-string-render (face string bitmap x y
-				:direction direction 
-				:load-function 'load-render)
+				:direction direction
+				:load-function #'load-render)
       (let ((barray (ft2:bitmap-to-array bitmap)))
         (case direction
           (:left-right (ablit array barray :x x :y y))

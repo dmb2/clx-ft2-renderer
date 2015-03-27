@@ -3,8 +3,7 @@
 (in-package #:clx-freetype2-renderer)
 
 ;;; "clx-freetype2-renderer" goes here. Hacks and glory await!
-(defparameter *face* (ft2:new-face "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf")
-  "Font for the tests.")
+
 ;; Taken from clx-truetype.lisp
 (defun screen-dpi (screen)
   "Returns dpi for @var{screen}. ((pixel width)/(mm width))*25.4 mm/inch"
@@ -89,19 +88,16 @@ arrays.  X and Y may be specified as a 2D offset into ARR1."
    (ft2::ft-glyphslot-metrics 
     (ft2::ft-face-glyph face))))
 ;; StumpWM Font API wrappers
-(defun font-exists-p (font)
-  )
-;; (defun open-font ((display xlib:display) (font string))
-;;   (let (face (ft2:new-face font))
-;;     (set-face-size face 12 (xlib:current-screen))))
-(defun close-font (font)
-  )
+
+(defun open-font (display font-name)
+  (declare (ignorable display))
+  (make-instance 'font :family font-name))
+(defun close-font (font))
+
 (defun font-ascent (font)
-  (round (ft2:face-ascender-pixels font)))
+  (round (ft2:face-ascender-pixels (font-face font))))
 (defun font-descent (font)
-  (round (ft2:face-descender-pixels font)))
+  (round (ft2:face-descender-pixels (font-face font))))
 (defun font-height (font)
   (- (font-ascent font) (font-descent font)))
-(defun text-line-width (font string &rest keys &key (start 0) end translate)
-  (declare (ignorable translate))
-  )
+
