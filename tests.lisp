@@ -19,7 +19,7 @@
   (let* ((right-margin 10)
 	 (left-margin 10)
 	 (face (slot-value font 'ft-face))
-	 (line-spacing (+ 3 (round (ft2:face-ascender-pixels face))))
+	 (line-spacing (+ 4 (round (ft2:face-ascender-pixels face))))
 	 (inter-word-space (round (ft2:string-pixel-width face " ")))
 	 (actual-width (xlib:drawable-width drawable))
 	 (line 1)
@@ -50,8 +50,8 @@
       ))
   nil)
 
-(defun render-test (&optional (host ""))
-  (let* ((display (xlib:open-display host))
+(defun render-test (&optional (host "") (display-num 1))
+  (let* ((display (xlib:open-display host :display display-num))
 	 (screen (first (xlib:display-roots display)))
 	 (black (xlib:screen-black-pixel screen))
 	 (white (xlib:screen-white-pixel screen))
@@ -84,3 +84,4 @@
       (:destroy-notify () t))
     (xlib:destroy-window window)
     (xlib:close-display display)))
+; 

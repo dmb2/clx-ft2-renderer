@@ -62,7 +62,8 @@
   (let ((result (list)))
     (maphash (lambda (key value)
                (declare (ignorable value))
-               (push key result)) *font-cache*)
+               (push key result))
+	     *font-cache*)
     (nreverse result)))
 
 (defun get-font-styles (font-family)
@@ -74,8 +75,10 @@
                (when (string-equal font-family family)
                  (maphash (lambda (style pathname)
                             (declare (ignorable pathname))
-                            (push style result)) value)
+                            (push style result)) 
+			  value)
                  (return-from get-font-styles 
-                   (nreverse result)))) *font-cache*)
+                   (nreverse result))))
+	     *font-cache*)
     (nreverse result)))
 
