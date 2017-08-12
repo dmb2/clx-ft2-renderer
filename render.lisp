@@ -2,7 +2,9 @@
 
 (in-package :clx-freetype2-renderer)
 (export '(draw-glyphs
+	  cache-char
 	  text-width))
+
 (declaim (optimize (speed 1) (safety 3) (debug 1) (space 0)))
 
 (defparameter *ft2-face-cache* (make-hash-table :test 'equal :size 256)
@@ -31,22 +33,6 @@ and put it in the cache."
 			  :top top
 			  :advance advance
 			  :left left)))
-
-(defmethod initialize-instance :after ((this-font font) &key)
-  (let ((this-style (slot-value this-font 'style))
-	 (this-family (slot-value this-font 'family)))
-    (unless this-style
-      (setf (slot-value this-font 'style) (find-default-style this-family)))
-    (check-valid-font-families (slot-value this-font 'family)
-			       (slot-value this-font 'style)))
-  (let* ((display (xlib:open-display "" :display 1))
-	(screen (first (xlib:display-roots display))))
-    (with-slots (family style ft-face size) this-font
-    (setf ft-face (ft2:new-face (get-font-pathname family style)))
-    (multiple-value-bind (dpi-x dpi-y) (screen-dpi screen)
-      (ft2:set-char-size ft-face (* size 64) 0 dpi-x dpi-y))
-    (loop for i from 20 to 126
-       do (cache-char ft-face (code-char i) nil)))))
 
 (defun load-render (face char vertical-p)
   "Get the bitmap from the hashtable, render it and store it for
@@ -111,10 +97,13 @@ default-load-render by returning nil."
           (:up-down    (ablit array barray :x x :y y))
           (:down-up    (ablit array barray :x x :y (+ height y))))))
     array))
+
 (defun text-width (face string)
   (round (ft2:string-pixel-width face string)))
+
 (defun text-height (face string)
   (round (ft2:string-pixel-height face string)))
+
 (defun render-glyphs (drawable gcontext x y string font update-bg-p)
   "Actually handle the rendering"
   (let* ((display (xlib:drawable-display drawable))

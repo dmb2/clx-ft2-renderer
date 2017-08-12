@@ -34,10 +34,19 @@
 	    :accessor font-face
 	    :initform nil
 	    :documentation "Internal reference to the freetype2 face")
-   (char->glyph-info 
-    :type hash-table
-    :initform (make-hash-table :size 256)
-    :documentation "Cache for glyph info")
+   
+   (screen-dpi
+    :type list
+    :initarg :dpi 
+    :accessor font-dpi
+    :initform '(72 72)
+    :documentation "DPI in X and Y for screen the font will be rendered on.")
+   
+   ;; (char->glyph-info 
+   ;;  :type hash-table
+   ;;  :initform (make-hash-table :size 256)
+   ;;  :documentation "Cache for glyph info")
+   
    ;; (string-alpha-maps 
    ;;  :type hash-table 
    ;;  :initform (make-hash-table :test 'equal) 
@@ -50,13 +59,13 @@
   "Tries to pick a reasonable style"
   (let ((styles (get-font-styles family)))
     (if (= (length styles) 1) 
-	(car styles)
+	(first styles)
 	(or (find "Roman" styles :test #'string-equal)
 	    (find "Regular" styles :test #'string-equal)
 	    (find "Medium" styles :test #'string-equal)
 	    (find "Book" styles :test #'string-equal)
 	    ;; Give up and take the first of the list
-	    (car styles)))))
+	    (first styles)))))
 (defun get-font-pathname (family style)
   (let ((font-hash (gethash family *font-cache*)))
     (when font-hash 
@@ -121,3 +130,18 @@
                 'font
                 :family family :style style :underline underline 
                 :strikethrough strikethrough :overline overline ))))
+
+(defmethod initialize-instance :after ((this-font font) &key)
+  (let ((this-style (slot-value this-font 'style))
+	 (this-family (slot-value this-font 'family)))
+    (unless this-style
+      (setf (slot-value this-font 'style) (find-default-style this-family)))
+    (check-valid-font-families (slot-value this-font 'family)
+			       (slot-value this-font 'style))
+    (with-slots (family style ft-face size) this-font
+      (setf ft-face (ft2:new-face (get-font-pathname family style)))
+      (ft2:set-char-size ft-face (* size 64) 0 
+			   (first (font-dpi this-font)) 
+			   (second (font-dpi this-font))) 
+      (loop for i from 20 to 126
+      	 do (cache-char ft-face (code-char i) nil)))))

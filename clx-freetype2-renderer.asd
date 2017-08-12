@@ -13,8 +13,8 @@
                #:cl-freetype2)
   :serial t
   :components ((:file "package")
-	       (:file "font-cache")
 	       (:file "font")
+	       (:file "font-cache")
 	       (:file "render")
                (:file "clx-freetype2-renderer")
 	       (:file "tests")))
