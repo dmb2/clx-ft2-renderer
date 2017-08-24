@@ -50,13 +50,14 @@
       ))
   nil)
 
-(defun render-test (&optional (host "") (display-num 1))
+(defun render-test (&optional (host "") (display-num 0))
   (let* ((display (xlib:open-display host :display display-num))
 	 (screen (first (xlib:display-roots display)))
 	 (black (xlib:screen-black-pixel screen))
 	 (white (xlib:screen-white-pixel screen))
 	 (root-window (xlib:screen-root screen))
-	 (font (make-instance 'font :family "DejaVu Sans" :size 14))
+	 (dpi (multiple-value-list (screen-dpi screen)))
+	 (font (make-instance 'font :family "DejaVu Sans" :size 14 :dpi dpi))
 	 (gcontext (xlib:create-gcontext
 		    :drawable root-window
 		    :foreground white

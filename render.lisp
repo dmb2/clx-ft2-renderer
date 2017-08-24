@@ -2,7 +2,9 @@
 
 (in-package :clx-freetype2-renderer)
 (export '(draw-glyphs
+	  cache-char
 	  text-width))
+
 (declaim (optimize (speed 1) (safety 3) (debug 1) (space 0)))
 
 (defparameter *ft2-face-cache* (make-hash-table :test 'equal :size 256)
@@ -114,10 +116,13 @@ default-load-render by returning nil."
           (:up-down    (ablit array barray :x x :y y))
           (:down-up    (ablit array barray :x x :y (+ height y))))))
     array))
+
 (defun text-width (face string)
   (round (ft2:string-pixel-width face string)))
+
 (defun text-height (face string)
   (round (ft2:string-pixel-height face string)))
+
 (defun render-glyphs (drawable gcontext x y string font update-bg-p)
   "Actually handle the rendering"
   (let* ((display (xlib:drawable-display drawable))
