@@ -45,11 +45,11 @@
   (let ((suffix (pathname-type pathname)))
     (or (string-equal "ttf" suffix) (string-equal "otf" suffix))))
 
-(defun cache-fonts (&optional (host ""))
+(defun cache-fonts (&optional (host "") (display 0))
   "Caches fonts from @refvar{*font-dirs*} directories."
   (declare (special *font-cache*))
   (clrhash *font-cache*)
-  (append (xlib:font-path (xlib:open-display host)) *font-dirs*)  
+  (append (xlib:font-path (xlib:open-display host :display display)) *font-dirs*)  
   (dolist (font-dir *font-dirs*)
     (fad:walk-directory font-dir #'cache-font-file :if-does-not-exist :ignore
                         :test #'ft2-pathname-test))

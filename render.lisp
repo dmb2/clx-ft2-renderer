@@ -39,7 +39,10 @@ and put it in the cache."
       (setf (slot-value this-font 'style) (find-default-style this-family)))
     (check-valid-font-families (slot-value this-font 'family)
 			       (slot-value this-font 'style)))
-  (let* ((display (xlib:open-display "" :display 1))
+  (let* ((display-parms (cl-ppcre:split ":" (sb-posix:getenv "DISPLAY")))
+	 (host (first display-parms))
+	 (dnum (first (multiple-value-list (parse-integer (second display-parms)))))
+	 (display (xlib:open-display host :display dnum))
 	(screen (first (xlib:display-roots display))))
     (with-slots (family style ft-face size) this-font
     (setf ft-face (ft2:new-face (get-font-pathname family style)))
@@ -148,7 +151,7 @@ default-load-render by returning nil."
 			   x-pos y-pos  width height))
   nil)
 
-(defun draw-glyphs (drawable gcontext x y string &key (start 0) end font update-bg-p)
+(defun draw-glyphs (drawable gcontext x y string &key start end font update-bg-p)
   "Draw glyphs to gcontext when the face was provided"
   (when font
       (render-glyphs drawable gcontext x y 
