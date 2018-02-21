@@ -70,9 +70,11 @@ default-load-render by returning nil."
      do (princ #\Newline)))
 
 (defun make-alpha-picture (pixmap gc image display)
+  (format t "~a ~a ~a ~a" pixmap gc image display)
   (xlib:put-image pixmap gc image :x 0 :y 0)
   (xlib:render-create-picture pixmap
 			      :format (display-alpha-picture-format display)))
+
 (defun update-foreground (drawable gcontext)
   "Lazy updates foreground for drawable. @var{drawable} must be window or pixmap."
   (let ((pixmap (or (getf (xlib:drawable-plist drawable) :ft2-pen-surface)
@@ -127,20 +129,21 @@ default-load-render by returning nil."
   "Actually handle the rendering"
   (let* ((display (xlib:drawable-display drawable))
 	 (face (slot-value font 'ft-face))
-	 (width (text-width face string))
-	 (height (text-height face string))
+	 (width (first (multiple-value-list (text-width face string))))
+	 (height (first (multiple-value-list (text-height face string))))
 	 (alpha-data (string-to-array face string :left-right width height))
 	 (y-max (round (ft2:face-ascender-pixels face)))
 	 (x-min (round (get-bearing-x #\t face)))
 	 (x-pos x)
-	 (y-pos (- y y-max))
+	 (y-pos (if (> y y-max) (- y y-max) 0))
 	 (image (xlib:create-image :width width :height height 
 	 			   :depth 8 :data alpha-data))
 	 (alpha-pixmap (xlib:create-pixmap :width width :height height
 					   :depth 8 :drawable drawable))
 	 (alpha-gc (xlib:create-gcontext :drawable alpha-pixmap 
-					 :foreground (xlib:gcontext-foreground gcontext)
-					 :background (xlib:gcontext-background gcontext)))
+					 ;:foreground (xlib:gcontext-foreground gcontext)
+					 ;:background (xlib:gcontext-background gcontext)
+					 ))
 	 (alpha-picture (make-alpha-picture alpha-pixmap alpha-gc image display))
 	 (source-picture (get-drawable-pen-picture drawable))
 	 (dest-picture (get-drawable-picture drawable)))
