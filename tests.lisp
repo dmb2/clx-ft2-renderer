@@ -75,11 +75,12 @@
 	 (height nil))
     ;; setup the font
     (set-face-size font screen 14)
-     (xlib:map-window window)		;
+     (xlib:map-window window)
      (xlib:event-case (display :force-output-p t
      			      :discard-p t)
        (:configure-notify (w-w w-h) (setf width w-w
-     					 height w-h) nil)
+     					 height w-h) 
+			  nil)
        (:exposure (count) (handle-expose-event count window gcontext font words))
        (:button-press () t)
        (:destroy-notify () t))
