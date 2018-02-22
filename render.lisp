@@ -34,24 +34,21 @@ and put it in the cache."
 			  :advance advance
 			  :left left)))
 
+
 (defmethod initialize-instance :after ((this-font font) &key)
   (let ((this-style (slot-value this-font 'style))
-	 (this-family (slot-value this-font 'family)))
+	(this-family (slot-value this-font 'family))
+	(dpi-x (first (slot-value this-font 'screen-dpi)))
+	(dpi-y (second (slot-value this-font 'screen-dpi))))
     (unless this-style
       (setf (slot-value this-font 'style) (find-default-style this-family)))
     (check-valid-font-families (slot-value this-font 'family)
-			       (slot-value this-font 'style)))
-  (let* ((display-parms (cl-ppcre:split ":" (sb-posix:getenv "DISPLAY")))
-	 (host (first display-parms))
-	 (dnum (first (multiple-value-list (parse-integer (second display-parms)))))
-	 (display (xlib:open-display host :display dnum))
-	(screen (first (xlib:display-roots display))))
+			       (slot-value this-font 'style))
     (with-slots (family style ft-face size) this-font
-    (setf ft-face (ft2:new-face (get-font-pathname family style)))
-    (multiple-value-bind (dpi-x dpi-y) (screen-dpi screen)
-      (ft2:set-char-size ft-face (* size 64) 0 dpi-x dpi-y))
-    (loop for i from 20 to 126
-       do (cache-char ft-face (code-char i) nil)))))
+      (setf ft-face (ft2:new-face (get-font-pathname family style)))
+      (ft2:set-char-size ft-face (* size 64) 0 dpi-x dpi-y)
+      (loop for i from 20 to 126
+	 do (cache-char ft-face (code-char i) nil)))))
 
 (defun load-render (face char vertical-p)
   "Get the bitmap from the hashtable, render it and store it for
