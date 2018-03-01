@@ -67,7 +67,6 @@ default-load-render by returning nil."
      do (princ #\Newline)))
 
 (defun make-alpha-picture (pixmap gc image display)
-  (format t "~a ~a ~a ~a" pixmap gc image display)
   (xlib:put-image pixmap gc image :x 0 :y 0)
   (xlib:render-create-picture pixmap
 			      :format (display-alpha-picture-format display)))
@@ -124,36 +123,37 @@ default-load-render by returning nil."
 
 (defun render-glyphs (drawable gcontext x y string font update-bg-p)
   "Actually handle the rendering"
-  (let* ((display (xlib:drawable-display drawable))
-	 (face (slot-value font 'ft-face))
-	 (width (first (multiple-value-list (text-width face string))))
-	 (height (first (multiple-value-list (text-height face string))))
-	 (alpha-data (string-to-array face string :left-right width height))
-	 (y-max (round (ft2:face-ascender-pixels face)))
-	 (x-min (round (get-bearing-x #\t face)))
-	 (x-pos x)
-	 (y-pos (if (> y y-max) (- y y-max) 0))
-	 (image (xlib:create-image :width width :height height 
-	 			   :depth 8 :data alpha-data))
-	 (alpha-pixmap (xlib:create-pixmap :width width :height height
-					   :depth 8 :drawable drawable))
-	 (alpha-gc (xlib:create-gcontext :drawable alpha-pixmap 
-					 ;:foreground (xlib:gcontext-foreground gcontext)
-					 ;:background (xlib:gcontext-background gcontext)
-					 ))
-	 (alpha-picture (make-alpha-picture alpha-pixmap alpha-gc image display))
-	 (source-picture (get-drawable-pen-picture drawable))
-	 (dest-picture (get-drawable-picture drawable)))
-    (update-foreground drawable gcontext)
-    (when update-bg-p
-      (update-background drawable gcontext x-pos y-pos  width height))
-    (setf  
-     (xlib:picture-clip-x-origin dest-picture) (xlib:gcontext-clip-x gcontext)
-     (xlib:picture-clip-y-origin dest-picture) (xlib:gcontext-clip-y gcontext)
-     (xlib:picture-subwindow-mode dest-picture) (xlib:gcontext-subwindow-mode gcontext)
-     (xlib::picture-clip-mask dest-picture) (xlib::gcontext-clip-mask gcontext))
-    (xlib:render-composite :over source-picture alpha-picture dest-picture 0 0 0 0 
-			   x-pos y-pos  width height))
+  (unless (equal string "")
+    (let* ((display (xlib:drawable-display drawable))
+	   (face (slot-value font 'ft-face))
+	   (width (first (multiple-value-list (text-width face string))))
+	   (height (first (multiple-value-list (text-height face string))))
+	   (alpha-data (string-to-array face string :left-right width height))
+	   (y-max (round (ft2:face-ascender-pixels face)))
+	   (x-min (round (get-bearing-x #\t face)))
+	   (x-pos x)
+	   (y-pos (if (> y y-max) (- y y-max) 0))
+	   (image (xlib:create-image :width width :height height 
+				     :depth 8 :data alpha-data))
+	   (alpha-pixmap (xlib:create-pixmap :width width :height height
+					     :depth 8 :drawable drawable))
+	   (alpha-gc (xlib:create-gcontext :drawable alpha-pixmap 
+					;:foreground (xlib:gcontext-foreground gcontext)
+					;:background (xlib:gcontext-background gcontext)
+					   ))
+	   (alpha-picture (make-alpha-picture alpha-pixmap alpha-gc image display))
+	   (source-picture (get-drawable-pen-picture drawable))
+	   (dest-picture (get-drawable-picture drawable)))
+      (update-foreground drawable gcontext)
+      (when update-bg-p
+	(update-background drawable gcontext x-pos y-pos  width height))
+      (setf  
+       (xlib:picture-clip-x-origin dest-picture) (xlib:gcontext-clip-x gcontext)
+       (xlib:picture-clip-y-origin dest-picture) (xlib:gcontext-clip-y gcontext)
+       (xlib:picture-subwindow-mode dest-picture) (xlib:gcontext-subwindow-mode gcontext)
+       (xlib::picture-clip-mask dest-picture) (xlib::gcontext-clip-mask gcontext))
+      (xlib:render-composite :over source-picture alpha-picture dest-picture 0 0 0 0 
+			     x-pos y-pos  width height)))
   nil)
 
 (defun draw-glyphs (drawable gcontext x y string &key start end font update-bg-p)

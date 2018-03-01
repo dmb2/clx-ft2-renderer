@@ -15,6 +15,7 @@
 		(white-space-split
 		 (subseq string (1+ cut-point))))
 	(list string)))))
+
 (defun draw-words (drawable gcontext words font)
   (let* ((right-margin 10)
 	 (left-margin 10)
@@ -24,13 +25,16 @@
 	 (actual-width (xlib:drawable-width drawable))
 	 (line 1)
 	 (x left-margin))
-    (dolist (word words)
-      (let ((width (round (ft2:string-pixel-width face word))))
-	(when (> (+ x width right-margin) actual-width)
-	  (incf line) 
-	  (setf x left-margin)) 
-	(draw-glyphs drawable gcontext x (* line line-spacing) word :font font)
-	(incf x (+ width inter-word-space))))))
+     (render-glyphs drawable gcontext 61 10 "" font nil)
+     ))
+;; (dolist (word words)
+;;       (let ((width (round (ft2:string-pixel-width face word))))
+;; 	(when (> (+ x width right-margin) actual-width)
+;; 	  (incf line) 
+;; 	  (setf x left-margin)) 
+;; 	(draw-glyphs drawable gcontext x (* line line-spacing) word :font font)
+;; 	(incf x (+ width inter-word-space))))
+
 (defun handle-expose-event (count window gcontext font words)
   (when (zerop count)
     (let* ((width (xlib:drawable-width window))
@@ -57,7 +61,7 @@
 	 (white (xlib:screen-white-pixel screen))
 	 (root-window (xlib:screen-root screen))
 	 (dpi (multiple-value-list (screen-dpi screen)))
-	 (font (make-instance 'font :family "DejaVu Sans" :size 14 :dpi dpi))
+	 (font (make-instance 'font :family "Consolas"))
 	 (gcontext (xlib:create-gcontext
 	  	    :drawable root-window
 	  	    :foreground white
@@ -87,5 +91,6 @@
     (xlib:destroy-window window)
     (xlib:close-display display)
     ))
+
   
 ; 
