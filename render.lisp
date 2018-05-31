@@ -138,12 +138,13 @@ default-load-render by returning nil."
 	   (alpha-pixmap (xlib:create-pixmap :width width :height height
 					     :depth 8 :drawable drawable))
 	   (alpha-gc (xlib:create-gcontext :drawable alpha-pixmap 
-					;:foreground (xlib:gcontext-foreground gcontext)
-					;:background (xlib:gcontext-background gcontext)
+					:foreground (xlib:gcontext-foreground gcontext)
+					:background (xlib:gcontext-background gcontext)
 					   ))
 	   (alpha-picture (make-alpha-picture alpha-pixmap alpha-gc image display))
 	   (source-picture (get-drawable-pen-picture drawable))
 	   (dest-picture (get-drawable-picture drawable)))
+      
       (update-foreground drawable gcontext)
       (when update-bg-p
 	(update-background drawable gcontext x-pos y-pos  width height))
