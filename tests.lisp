@@ -48,7 +48,7 @@
       (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext))
 	(xlib:draw-rectangle pixmap gcontext 0 0 
 			     width height 'fill))
-      (draw-words pixmap gcontext words font)
+      (time (draw-words pixmap gcontext words font))
       (xlib:copy-area pixmap gcontext 0 0 width height window 0 0)
       ))
   nil)
