@@ -113,23 +113,16 @@
          (eql (font-underline font1) (font-underline font2))
          (eql (font-strikethrough font1) (font-strikethrough font2))
          (eql (font-overline font1) (font-overline font2)))))
-(defmethod print-object ((instance font) stream)
+
+(defmethod print-object ((font font) stream)
   "Pretty printing font object"
-  (with-slots (family style underline strikethrough
-		      overline)
-      instance
-    (if *print-readably*
-        (format stream
-                "#.(~S '~S ~S ~S ~S ~S ~S)"
-                'cl:make-instance 'font
-                :family family :style style :underline underline 
-                :strikethrough strikethrough
-                :overline overline)
-        (format stream
-                "#<'~S ~S ~S ~S ~S ~S >"
-                'font
-                :family family :style style :underline underline 
-                :strikethrough strikethrough :overline overline ))))
+  (print-unreadable-object (font stream :type t)
+    (format stream "Family: ~S Style: ~S. Underline: ~S. Overline: ~S. Strikethrough: ~S."
+            (font-family font)
+            (font-style font)
+            (font-underline font)
+            (font-overline font)
+            (font-strikethrough font))))
 
 (defmethod initialize-instance :after ((this-font font) &key)
   (let ((this-style (slot-value this-font 'style))
