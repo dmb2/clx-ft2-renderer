@@ -69,16 +69,6 @@
 (defun get-font-styles (font-family)
   "Returns font styles for current @var{font-family}. For e.g. regular, italic, bold, etc."
   (declare (special *font-cache*))
-  (let ((result (list)))
-    (maphash (lambda (family value)
-               (declare (ignorable family))
-               (when (string-equal font-family family)
-                 (maphash (lambda (style pathname)
-                            (declare (ignorable pathname))
-                            (push style result)) 
-			  value)
-                 (return-from get-font-styles 
-                   (nreverse result))))
-	     *font-cache*)
-    (nreverse result)))
-
+  (alexandria:when-let ((font-styles (gethash font-family *font-cache*)))
+    (loop :for font-style :being :the :hash-keys :of font-styles
+          :collect font-style)))
