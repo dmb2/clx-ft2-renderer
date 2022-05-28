@@ -18,12 +18,18 @@
   advance
   left)
 
-(defun cache-char (face char vertical-p)
+(defun cache-char (face char vertical-p &optional overwrite)
   "Either retrieve the `FT2-CHAR-BITMAP' from the cache, or render it
 and put it in the cache."
-  (or (gethash char *ft2-face-cache*)
-      (setf (gethash char *ft2-face-cache*) 
-	    (render-char face char vertical-p))))
+  ;; If *current-font* is unbound, use the default face cache
+  (let* ((cache (if *current-font*
+                   (font-face-cache *current-font*)
+                   *ft2-face-cache*))
+         (glyph (gethash char cache)))
+    (cond ((or overwrite (null glyph))
+           (setf (gethash char cache)
+                 (render-char face char vertical-p)))
+          (t glyph))))
 
 (defun render-char (face char vertical-p)
   "Render the CHAR for FACE and store the result in a FT2-CHAR-BITMAP struct."
@@ -124,7 +130,8 @@ default-load-render by returning nil."
 (defun render-glyphs (drawable gcontext x y string font update-bg-p)
   "Actually handle the rendering"
   (unless (equal string "")
-    (let* ((display (xlib:drawable-display drawable))
+    (let* ((*current-font* font)
+           (display (xlib:drawable-display drawable))
 	   (face (slot-value font 'ft-face))
 	   (width (first (multiple-value-list (text-width face string))))
 	   (height (first (multiple-value-list (text-height face string))))

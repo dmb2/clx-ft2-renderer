@@ -1,4 +1,8 @@
 (in-package #:clx-freetype2-renderer)
+
+(defvar *current-font* nil
+  "The current font. Used to communicate which cache to use when rendering")
+
 (export '(font))
 (defclass font ()
   ((family :type string :initarg :family :accessor font-family :documentation "Font family.")
@@ -52,7 +56,10 @@
    ;;  :initform (make-hash-table :test 'equal) 
    ;;  :accessor font-string-alpha-maps
    ;;  :documentation "Cache for text alpha maps")
-   )
+   (font-face-cache
+    :initform (make-hash-table :test 'equal :size 256)
+    :reader font-face-cache
+    :documentation "Cache for rendered chars for this font object."))
   (:documentation "Class for representing font information."))
 
 (defun find-default-style (family)
@@ -126,7 +133,8 @@
 
 (defmethod initialize-instance :after ((this-font font) &key)
   (let ((this-style (slot-value this-font 'style))
-	 (this-family (slot-value this-font 'family)))
+        (this-family (slot-value this-font 'family))
+        (*current-font* ))
     (unless this-style
       (setf (slot-value this-font 'style) (find-default-style this-family)))
     (check-valid-font-families (slot-value this-font 'family)
@@ -137,4 +145,7 @@
 			   (first (font-dpi this-font)) 
 			   (second (font-dpi this-font))) 
       (loop for i from 20 to 126
-      	 do (cache-char ft-face (code-char i) nil)))))
+            do (cache-char ft-face (code-char i) nil t))
+      (let ((*current-font* this-font))
+        (loop for i from 20 to 126
+              do (cache-char ft-face (code-char i) nil t))))))
